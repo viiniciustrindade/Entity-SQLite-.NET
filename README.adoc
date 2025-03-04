@@ -1,150 +1,154 @@
-= Criando um Sistema Windows Forms com SQLite e Entity Framework 6 (.NET Framework 4.8)
+= Documentação do Projeto Controle de Estoque
+Autor: Seu Nome
+Versão: 1.0
+Data: 2025-03-04
 
-== 1. Introdução
-Este documento orienta sobre como criar um sistema Windows Forms em C# .NET Framework 4.8 utilizando SQLite como banco de dados e Entity Framework 6 para gerenciamento dos dados.
+== Tecnologias Utilizadas
+- .NET Core 8 (Windows Forms)
+- Entity Framework Core 8
+- SQLite
+- Visual Studio 2022 ou superior
 
-== 2. Requisitos
-- .NET Framework 4.8 instalado
-- Visual Studio 2019 ou 2022
-- Pacotes NuGet necessários:
-  - `System.Data.SQLite`
-  - `EntityFramework`
-  - `EntityFramework.Sqlite`
+== Pré-requisitos
+- .NET 8 SDK instalado
+- Visual Studio 2022 com suporte para desenvolvimento Windows Forms
+- Pacotes NuGet necessários: 
+  - Microsoft.EntityFrameworkCore
+  - Microsoft.EntityFrameworkCore.Sqlite
+  - Microsoft.EntityFrameworkCore.Tools
 
-== 3. Criando o Projeto
-. Abra o Visual Studio e crie um novo projeto do tipo *Windows Forms App (.NET Framework)*.
-. Escolha um nome para o projeto e clique em *Criar*.
-. No *Gerenciador de Pacotes NuGet*, instale os pacotes necessários executando os comandos abaixo no *Console do Gerenciador de Pacotes*:
+== Passo a Passo do Projeto
 
-[source,sh]
+=== 1. Criação do Projeto
+1. Abra o Visual Studio.
+2. Vá em `File -> New -> Project`.
+3. Selecione `Windows Forms App (.NET)` e clique em `Next`.
+4. Nomeie o projeto como `ControleEstoqueApp` e escolha `.NET 8.0`.
+5. Clique em `Create`.
+
+=== 2. Instalação dos Pacotes NuGet
+No Gerenciador de Pacotes NuGet ou via console:
+
+[source, powershell]
 ----
-Install-Package System.Data.SQLite
-Install-Package EntityFramework
-Install-Package EntityFramework.Sqlite
+Install-Package Microsoft.EntityFrameworkCore
+Install-Package Microsoft.EntityFrameworkCore.Sqlite
+Install-Package Microsoft.EntityFrameworkCore.Tools
 ----
 
-== 4. Configurando o Entity Framework 6
-No arquivo *App.config*, adicione a seguinte configuração de conexão:
+=== 3. Criação do Modelo
+Crie uma pasta chamada `Models` e adicione a classe `Produto.cs`:
 
-[source,xml]
+[source, csharp]
 ----
-<configuration>
-  <connectionStrings>
-    <add name="AppDbContext" connectionString="Data Source=clientes.db" providerName="System.Data.SQLite.EF6" />
-  </connectionStrings>
-</configuration>
-----
-
-== 5. Criando o Modelo e o Contexto do Banco
-Crie uma pasta chamada *Models* e adicione uma classe `Cliente.cs`:
-
-[source,csharp]
-----
-using System.ComponentModel.DataAnnotations;
-
-public class Cliente
+namespace ControleEstoqueApp.Models
 {
-    [Key]
-    public int Id { get; set; }
-    public string Nome { get; set; }
-    public string Email { get; set; }
+    public class Produto
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; }
+        public int Quantidade { get; set; }
+        public decimal Preco { get; set; }
+    }
 }
 ----
 
-Agora, crie a classe `AppDbContext.cs` para gerenciar a conexão com o SQLite:
+=== 4. Criação do DbContext
+Crie uma pasta chamada `Data` e adicione a classe `AppDbContext.cs`:
 
-[source,csharp]
+[source, csharp]
 ----
-using System.Data.Entity;
+using Microsoft.EntityFrameworkCore;
+using ControleEstoqueApp.Models;
 
-public class AppDbContext : DbContext
+namespace ControleEstoqueApp.Data
 {
-    public AppDbContext() : base("name=AppDbContext") {}
+    public class AppDbContext : DbContext
+    {
+        public DbSet<Produto> Produtos { get; set; }
 
-    public DbSet<Cliente> Clientes { get; set; }
+        protected override void OnConfiguring(DbContextOptionsBuilder options)
+            => options.UseSqlite("Data Source=estoque.db");
+    }
 }
 ----
 
-== 6. Criando e Aplicando Migrations
-O Entity Framework 6 usa *Migrations* para criar e atualizar o banco de dados. No *Console do Gerenciador de Pacotes*, execute:
+=== 5. Aplicação das Migrations
+Abra o Console do Gerenciador de Pacotes e execute:
 
-[source,sh]
+[source, powershell]
 ----
-Enable-Migrations
 Add-Migration InitialCreate
 Update-Database
 ----
 
-Isso criará o banco de dados `clientes.db` e aplicará as tabelas.
+Isso criará o banco de dados `estoque.db` e a tabela `Produtos`.
 
-== 7. Implementando um CRUD Simples
-No *Form1*, adicione um *DataGridView*, um *TextBox* para nome e email e três botões (Salvar, Atualizar e Excluir).
+=== 6. CRUD no Windows Forms
 
-=== Salvando um Cliente
-[source,csharp]
+==== Exemplo de Inserção de Produto
+No formulário principal (`Form1.cs`), adicione a referência ao contexto e implemente:
+
+[source, csharp]
 ----
-private void btnSalvar_Click(object sender, EventArgs e)
+using ControleEstoqueApp.Data;
+using ControleEstoqueApp.Models;
+
+var produto = new Produto
 {
-    using (var db = new AppDbContext())
-    {
-        var cliente = new Cliente { Nome = txtNome.Text, Email = txtEmail.Text };
-        db.Clientes.Add(cliente);
-        db.SaveChanges();
-        CarregarDados();
-    }
+    Nome = txtNome.Text,
+    Quantidade = int.Parse(txtQuantidade.Text),
+    Preco = decimal.Parse(txtPreco.Text)
+};
+
+using var context = new AppDbContext();
+context.Produtos.Add(produto);
+context.SaveChanges();
+
+MessageBox.Show("Produto cadastrado com sucesso!");
+----
+
+==== Exemplo de Listagem de Produtos
+[source, csharp]
+----
+using var context = new AppDbContext();
+var produtos = context.Produtos.ToList();
+dataGridViewProdutos.DataSource = produtos;
+----
+
+==== Exemplo de Atualização de Produto
+[source, csharp]
+----
+using var context = new AppDbContext();
+var produto = context.Produtos.Find(id);
+if (produto != null)
+{
+    produto.Nome = txtNome.Text;
+    produto.Quantidade = int.Parse(txtQuantidade.Text);
+    produto.Preco = decimal.Parse(txtPreco.Text);
+    context.SaveChanges();
 }
 ----
 
-=== Atualizando um Cliente
-[source,csharp]
+==== Exemplo de Exclusão de Produto
+[source, csharp]
 ----
-private void btnAtualizar_Click(object sender, EventArgs e)
+using var context = new AppDbContext();
+var produto = context.Produtos.Find(id);
+if (produto != null)
 {
-    using (var db = new AppDbContext())
-    {
-        int id = Convert.ToInt32(txtId.Text);
-        var cliente = db.Clientes.Find(id);
-        if (cliente != null)
-        {
-            cliente.Nome = txtNome.Text;
-            cliente.Email = txtEmail.Text;
-            db.SaveChanges();
-            CarregarDados();
-        }
-    }
+    context.Produtos.Remove(produto);
+    context.SaveChanges();
 }
 ----
 
-=== Excluindo um Cliente
-[source,csharp]
-----
-private void btnExcluir_Click(object sender, EventArgs e)
-{
-    using (var db = new AppDbContext())
-    {
-        int id = Convert.ToInt32(txtId.Text);
-        var cliente = db.Clientes.Find(id);
-        if (cliente != null)
-        {
-            db.Clientes.Remove(cliente);
-            db.SaveChanges();
-            CarregarDados();
-        }
-    }
-}
-----
+=== 7. Considerações Finais
+- O projeto utiliza SQLite para facilitar o desenvolvimento local sem necessidade de um servidor de banco de dados.
+- As migrations permitem versionar e atualizar o banco de dados conforme alterações no modelo.
+- É recomendado implementar validações de dados no formulário para evitar erros de entrada.
 
-=== Carregar Dados no DataGridView
-[source,csharp]
-----
-private void CarregarDados()
-{
-    using (var db = new AppDbContext())
-    {
-        dataGridView1.DataSource = db.Clientes.ToList();
-    }
-}
-----
+== Próximos Passos
+- Implementar tratamento de exceções.
+- Adicionar paginação e filtros na listagem.
+- Melhorar a interface gráfica com recursos avançados do Windows Forms.
 
-== 8. Conclusão
-Este documento apresentou os passos para configurar um sistema Windows Forms utilizando SQLite e Entity Framework 6 no .NET Framework 4.8. Com isso, você pode expandir as funcionalidades, como adicionar validações, filtros e outras tabelas para enriquecer o sistema.
