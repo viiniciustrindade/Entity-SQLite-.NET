@@ -1,0 +1,139 @@
+= Criando um Sistema Windows Forms com SQLite e Entity Framework
+
+== 1. Introdução
+Este documento orienta sobre como criar um sistema Windows Forms em C# .NET utilizando SQLite como banco de dados e Entity Framework Core para gerenciamento dos dados.
+
+== 2. Requisitos
+- .NET 6.0 ou superior instalado
+- Visual Studio (versão mais recente recomendada)
+- Pacotes NuGet necessários:
+  - `Microsoft.EntityFrameworkCore.Sqlite`
+  - `Microsoft.EntityFrameworkCore.Tools`
+
+== 3. Criando o Projeto
+. Abra o Visual Studio e crie um novo projeto do tipo *Windows Forms App (.NET)*.
+. Escolha um nome para o projeto e clique em *Criar*.
+. No *Gerenciador de Pacotes NuGet*, instale os pacotes necessários executando os comandos abaixo no *Console do Gerenciador de Pacotes*:
+
+[source,sh]
+----
+Install-Package Microsoft.EntityFrameworkCore.Sqlite
+Install-Package Microsoft.EntityFrameworkCore.Tools
+----
+
+== 4. Criando o Modelo e o Contexto do Banco
+Crie uma pasta chamada *Models* e adicione uma classe `Cliente.cs`:
+
+[source,csharp]
+----
+using System.ComponentModel.DataAnnotations;
+
+public class Cliente
+{
+    [Key]
+    public int Id { get; set; }
+    public string Nome { get; set; }
+    public string Email { get; set; }
+}
+----
+
+Agora, crie a classe `AppDbContext.cs` para gerenciar a conexão com o SQLite:
+
+[source,csharp]
+----
+using Microsoft.EntityFrameworkCore;
+
+public class AppDbContext : DbContext
+{
+    public DbSet<Cliente> Clientes { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlite("Data Source=clientes.db");
+    }
+}
+----
+
+== 5. Criando e Aplicando Migrations
+Abra o *Console do Gerenciador de Pacotes* e execute:
+
+[source,sh]
+----
+Add-Migration InitialCreate
+Update-Database
+----
+
+Isso criará o banco de dados `clientes.db` e aplicará as tabelas.
+
+== 6. Implementando um CRUD Simples
+No *Form1*, adicione um *DataGridView*, um *TextBox* para nome e email e três botões (Salvar, Atualizar e Excluir).
+
+=== Salvando um Cliente
+[source,csharp]
+----
+private void btnSalvar_Click(object sender, EventArgs e)
+{
+    using (var db = new AppDbContext())
+    {
+        var cliente = new Cliente { Nome = txtNome.Text, Email = txtEmail.Text };
+        db.Clientes.Add(cliente);
+        db.SaveChanges();
+        CarregarDados();
+    }
+}
+----
+
+=== Atualizando um Cliente
+[source,csharp]
+----
+private void btnAtualizar_Click(object sender, EventArgs e)
+{
+    using (var db = new AppDbContext())
+    {
+        int id = Convert.ToInt32(txtId.Text);
+        var cliente = db.Clientes.Find(id);
+        if (cliente != null)
+        {
+            cliente.Nome = txtNome.Text;
+            cliente.Email = txtEmail.Text;
+            db.SaveChanges();
+            CarregarDados();
+        }
+    }
+}
+----
+
+=== Excluindo um Cliente
+[source,csharp]
+----
+private void btnExcluir_Click(object sender, EventArgs e)
+{
+    using (var db = new AppDbContext())
+    {
+        int id = Convert.ToInt32(txtId.Text);
+        var cliente = db.Clientes.Find(id);
+        if (cliente != null)
+        {
+            db.Clientes.Remove(cliente);
+            db.SaveChanges();
+            CarregarDados();
+        }
+    }
+}
+----
+
+=== Carregar Dados no DataGridView
+[source,csharp]
+----
+private void CarregarDados()
+{
+    using (var db = new AppDbContext())
+    {
+        dataGridView1.DataSource = db.Clientes.ToList();
+    }
+}
+----
+
+== 7. Conclusão
+Este documento apresentou os passos para configurar um sistema Windows Forms utilizando SQLite e Entity Framework. Com isso, você pode expandir as funcionalidades, como adicionar validações, filtros e outras tabelas para enriquecer o sistema.
+
