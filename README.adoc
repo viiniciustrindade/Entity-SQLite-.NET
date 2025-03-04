@@ -1,27 +1,41 @@
-= Criando um Sistema Windows Forms com SQLite e Entity Framework
+= Criando um Sistema Windows Forms com SQLite e Entity Framework 6 (.NET Framework 4.8)
 
 == 1. Introdução
-Este documento orienta sobre como criar um sistema Windows Forms em C# .NET utilizando SQLite como banco de dados e Entity Framework Core para gerenciamento dos dados.
+Este documento orienta sobre como criar um sistema Windows Forms em C# .NET Framework 4.8 utilizando SQLite como banco de dados e Entity Framework 6 para gerenciamento dos dados.
 
 == 2. Requisitos
-- .NET 6.0 ou superior instalado
-- Visual Studio (versão mais recente recomendada)
+- .NET Framework 4.8 instalado
+- Visual Studio 2019 ou 2022
 - Pacotes NuGet necessários:
-  - `Microsoft.EntityFrameworkCore.Sqlite`
-  - `Microsoft.EntityFrameworkCore.Tools`
+  - `System.Data.SQLite`
+  - `EntityFramework`
+  - `EntityFramework.Sqlite`
 
 == 3. Criando o Projeto
-. Abra o Visual Studio e crie um novo projeto do tipo *Windows Forms App (.NET)*.
+. Abra o Visual Studio e crie um novo projeto do tipo *Windows Forms App (.NET Framework)*.
 . Escolha um nome para o projeto e clique em *Criar*.
 . No *Gerenciador de Pacotes NuGet*, instale os pacotes necessários executando os comandos abaixo no *Console do Gerenciador de Pacotes*:
 
 [source,sh]
 ----
-Install-Package Microsoft.EntityFrameworkCore.Sqlite
-Install-Package Microsoft.EntityFrameworkCore.Tools
+Install-Package System.Data.SQLite
+Install-Package EntityFramework
+Install-Package EntityFramework.Sqlite
 ----
 
-== 4. Criando o Modelo e o Contexto do Banco
+== 4. Configurando o Entity Framework 6
+No arquivo *App.config*, adicione a seguinte configuração de conexão:
+
+[source,xml]
+----
+<configuration>
+  <connectionStrings>
+    <add name="AppDbContext" connectionString="Data Source=clientes.db" providerName="System.Data.SQLite.EF6" />
+  </connectionStrings>
+</configuration>
+----
+
+== 5. Criando o Modelo e o Contexto do Banco
 Crie uma pasta chamada *Models* e adicione uma classe `Cliente.cs`:
 
 [source,csharp]
@@ -41,31 +55,29 @@ Agora, crie a classe `AppDbContext.cs` para gerenciar a conexão com o SQLite:
 
 [source,csharp]
 ----
-using Microsoft.EntityFrameworkCore;
+using System.Data.Entity;
 
 public class AppDbContext : DbContext
 {
-    public DbSet<Cliente> Clientes { get; set; }
+    public AppDbContext() : base("name=AppDbContext") {}
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlite("Data Source=clientes.db");
-    }
+    public DbSet<Cliente> Clientes { get; set; }
 }
 ----
 
-== 5. Criando e Aplicando Migrations
-Abra o *Console do Gerenciador de Pacotes* e execute:
+== 6. Criando e Aplicando Migrations
+O Entity Framework 6 usa *Migrations* para criar e atualizar o banco de dados. No *Console do Gerenciador de Pacotes*, execute:
 
 [source,sh]
 ----
+Enable-Migrations
 Add-Migration InitialCreate
 Update-Database
 ----
 
 Isso criará o banco de dados `clientes.db` e aplicará as tabelas.
 
-== 6. Implementando um CRUD Simples
+== 7. Implementando um CRUD Simples
 No *Form1*, adicione um *DataGridView*, um *TextBox* para nome e email e três botões (Salvar, Atualizar e Excluir).
 
 === Salvando um Cliente
@@ -134,6 +146,5 @@ private void CarregarDados()
 }
 ----
 
-== 7. Conclusão
-Este documento apresentou os passos para configurar um sistema Windows Forms utilizando SQLite e Entity Framework. Com isso, você pode expandir as funcionalidades, como adicionar validações, filtros e outras tabelas para enriquecer o sistema.
-
+== 8. Conclusão
+Este documento apresentou os passos para configurar um sistema Windows Forms utilizando SQLite e Entity Framework 6 no .NET Framework 4.8. Com isso, você pode expandir as funcionalidades, como adicionar validações, filtros e outras tabelas para enriquecer o sistema.
