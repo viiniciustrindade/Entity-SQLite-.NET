@@ -66,9 +66,14 @@ namespace ControleEstoqueApp.Data
     public class AppDbContext : DbContext
     {
         public DbSet<Produto> Produtos { get; set; }
-
+    
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite("Data Source=estoque.db");
+        {
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "estoque.db");
+            Console.WriteLine($"Banco de dados em: {path}");
+            options.UseSqlite($"Data Source={path}");
+        }
+    
     }
 }
 ----
